@@ -1,0 +1,262 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// --- PINOS DOS REED SWITCHES (Sensores) ---
+const int pinReedQ = A0; // Quadrado
+const int pinReedT = A1; // Triângulo
+const int pinReedC = A2; // Círculo
+const int pinReedE = A3; // Estrela 
+const int pinReedS = A4; // Seta 
+const int pinReedR = A5; // Retângulo
+const int buzzer = 48;
+
+// Array com os pinos dos Reed Switches
+int ListaRS[] = {pinReedQ, pinReedT, pinReedC, pinReedE, pinReedS, pinReedR};
+
+// --- PINOS DOS BOTÕES ---
+const int pinBotaoQ = 30; // Botão Quadrado
+const int pinBotaoT = 31; // Botão Triângulo
+const int pinBotaoC = 32; // Botão Círculo
+const int pinBotaoE = 33; // Botão Estrela
+const int pinBotaoS = 34; // Botão Seta
+const int pinBotaoR = 35; // Botão Retângulo
+
+// Array com os pinos dos Botões
+int ListaBotao[] = {pinBotaoQ, pinBotaoT, pinBotaoC, pinBotaoE, pinBotaoS, pinBotaoR};
+
+// --- PINOS DOS LEDs ---
+const int ledVermelho = 52;
+const int ledVerde = 53;
+
+// --- CONSTANTES DO JOGO ---
+const int NUM_FORMAS = 6; // Número total de formas geométricas
+
+// --- CONFIGURAÇÃO DO LCD I2C ---
+LiquidCrystal_I2C lcd(0x27, 16, 2); // Endereço 0x27, 16 colunas, 2 linhas
+
+// --- DEFINIÇÕES DOS CARACTERES CUSTOMIZADOS (Figuras Geométricas) ---
+// Ordem: Quadrado, Triângulo, Círculo, Estrela, Seta, Retângulo
+// Essa ordem DEVE corresponder à ordem dos pinos em ListaRS e ListaBotao
+// e também à ordem em nomesFormas.
+
+byte quadrado[8] = {
+  B00000,
+  B11111,
+  B10001,
+  B10001,
+  B10001,
+  B10001,
+  B11111,
+  B00000
+};
+
+byte triangulo[8] = {
+  B00000,
+  B00100,
+  B01110,
+  B11111,
+  B00000,
+  B00000,
+  B00000,
+  B00000
+};
+
+byte circulo[8] = {
+  B00000,
+  B01110,
+  B11111,
+  B10001,
+  B10001,
+  B11111,
+  B01110,
+  B00000
+};
+
+byte estrela[8] = { 
+  B00000,
+  B00100,
+  B11111,
+  B01110,
+  B10101,
+  B00000,
+  B00000,
+  B00000
+};
+
+byte seta[8] = { 
+  B00000,
+  B00100,
+  B01110,
+  B11111,
+  B00100,
+  B00100,
+  B00100,
+  B00000
+};
+
+byte retangulo[8] = {
+  B00000,
+  B11111,
+  B10001,
+  B10001,
+  B10001,
+  B11111,
+  B00000,
+  B00000
+};
+
+// Array de ponteiros para os dados dos caracteres customizados
+byte* ListaFiguras[] = {quadrado, triangulo, circulo, estrela, seta, retangulo};
+
+// Nomes das formas para exibir no LCD (na mesma ordem de ListaFiguras, ListaRS, ListaBotao)
+String nomesFormas[] = {"Quadrado", "Triangulo", "Circulo ", "Estrela ", "Seta    ", "Retangulo"}; // Espaços para preencher, se necessário
+
+
+// Variável para controlar o estado do jogo (se acertou a rodada)
+// bool acertoGlobal = false; 
+
+// --- FUNÇÕES AUXILIARES ---
+
+// Lê o estado de todos os Reed Switches
+// Retorna o índice do Reed Switch ativado (0 a NUM_FORMAS-1) ou -1 se nenhum estiver ativado
+int lerReedSwitchAtivado() {
+  for (int i = 0; i < NUM_FORMAS; i++) {
+    if (digitalRead(ListaRS[i]) == LOW) { // LOW porque estamos usando INPUT_PULLUP
+      return i; // Retorna o índice da forma correspondente ao Reed Switch
+    }
+  }
+  return -1; // Nenhum Reed Switch ativado
+}
+
+// Lê o estado de todos os Botões
+// Retorna o índice do Botão pressionado (0 a NUM_FORMAS-1) ou -1 se nenhum estiver pressionado
+int lerBotaoPressionado() {
+  for (int i = 0; i < NUM_FORMAS; i++) {
+    if (digitalRead(ListaBotao[i]) == LOW) { // LOW porque estamos usando INPUT_PULLUP
+      return i; // Retorna o índice da forma correspondente ao Botão
+    }
+  }
+  return -1; // Nenhum Botão pressionado
+}
+
+// --- CONFIGURAÇÃO INICIAL (SETUP) ---
+void setup() {
+  Serial.begin(9600); // Inicia a comunicação serial para debugging
+  Serial.println("Iniciando o jogo de formas...");
+
+  // Configura os pinos dos Reed Switches e Botões como entrada com pull-up interno
+  for (int i = 0; i < NUM_FORMAS; i++) {
+    pinMode(ListaRS[i], INPUT_PULLUP);
+    pinMode(ListaBotao[i], INPUT_PULLUP);
+  }
+
+  // Configura os pinos dos LEDs como saída
+  pinMode(ledVermelho, OUTPUT);
+  pinMode(ledVerde, OUTPUT);
+
+  // Estado inicial dos LEDs: Vermelho aceso (esperando/erro), Verde apagado
+  digitalWrite(ledVermelho, HIGH);
+  digitalWrite(ledVerde, LOW);
+
+  // Inicializa o LCD
+  lcd.init();       // Ou lcd.begin() para algumas bibliotecas
+  lcd.backlight();  // Liga a luz de fundo do LCD
+  lcd.clear();      // Limpa o display
+
+  // Cria os caracteres customizados no LCD
+  // Eles são armazenados nas posições 0 a NUM_FORMAS-1 da memória do LCD
+  for (int i = 0; i < NUM_FORMAS; i++) {
+    lcd.createChar(i, ListaFiguras[i]);
+  }
+  
+  lcd.setCursor(0,0);
+  lcd.print("Jogo das Formas");
+  lcd.setCursor(0,1);
+  lcd.print("Iniciando...");
+  delay(2000);
+  lcd.clear();
+
+  randomSeed(analogRead(A0)); // Inicializa o gerador de números aleatórios
+  pinMode(buzzer, OUTPUT);
+}
+
+// --- LOOP PRINCIPAL DO JOGO ---
+void loop() {
+  bool acertouRodada = false; // Controla se a rodada atual foi concluída com acerto
+
+  // 1. Sorteia uma forma geométrica
+  int formaEscolhidaIndex = random(0, NUM_FORMAS); // Gera um número entre 0 e NUM_FORMAS-1
+
+  Serial.print("Forma escolhida: ");
+  Serial.println(nomesFormas[formaEscolhidaIndex]);
+
+  // 2. Mostra a mensagem no LCD pedindo para encontrar a forma
+  lcd.clear();
+  lcd.setCursor(0, 0); // Coluna 0, Linha 0
+  lcd.print("Encontre o/a:"); // "o" para Quadrado/Triangulo/Circulo/Retangulo, "a" para Estrela/Seta
+  lcd.setCursor(0, 1); // Coluna 0, Linha 1
+  lcd.print(nomesFormas[formaEscolhidaIndex]); // Exibe o nome da forma
+  
+  // Exibe o caracter customizado da forma 
+  // Ajuste a posição (ex: coluna 13) conforme necessário
+  lcd.setCursor(13, 1); 
+  lcd.write(byte(formaEscolhidaIndex)); // Escreve o caracter customizado correspondente ao índice
+
+  // Estado inicial dos LEDs para a rodada: Vermelho aceso
+  digitalWrite(ledVermelho, HIGH);
+  digitalWrite(ledVerde, LOW);
+
+  // 3. Loop da rodada: espera o jogador acertar
+  while (!acertouRodada) {
+    int reedAtivado = lerReedSwitchAtivado();
+    int botaoPressionado = lerBotaoPressionado();
+
+    // Pequeno delay para evitar leituras muito rápidas e "bouncing" simples
+    // Para um debouncing mais robusto, seriam necessárias técnicas adicionais.
+    delay(100); 
+
+    // Verifica se AMBOS, o reed switch E o botão corretos, foram ativados
+    if (reedAtivado == formaEscolhidaIndex && botaoPressionado == formaEscolhidaIndex) {
+      // --- ACERTOU! ---
+      Serial.println("Acertou!");
+
+      digitalWrite(ledVermelho, LOW);  // Apaga LED vermelho
+      digitalWrite(ledVerde, HIGH);   // Acende LED verde
+      digitalWrite(buzzer, HIGH);
+      delay(75);
+      digitalWrite(buzzer,LOW);
+      delay(75);
+      digitalWrite(buzzer, HIGH);
+      delay(75);
+      digitalWrite(buzzer, LOW);
+      delay(75);
+      digitalWrite(buzzer, HIGH);
+      delay(150);
+      digitalWrite(buzzer,LOW);
+      lcd.clear();
+      lcd.setCursor(2, 0); // Centraliza um pouco
+      lcd.print("Parabens!");
+      lcd.setCursor(1, 1);
+      lcd.print("Voce acertou!");
+      
+      delay(2500); // Tempo para comemorar
+
+      acertouRodada = true; // Marca que acertou para sair do loop da rodada
+    
+    } else if (reedAtivado != -1 && botaoPressionado != -1 && (reedAtivado != formaEscolhidaIndex || botaoPressionado != formaEscolhidaIndex)) {
+      // --- ERROU (mas pressionou algo) ---
+      // Se um reed e um botão foram ativados, mas não são os corretos
+      Serial.println("Errado! Tentou combinar, mas nao era a forma certa.");
+      digitalWrite(ledVermelho, HIGH); // Mantém/Acende LED vermelho
+      digitalWrite(ledVerde, LOW);   // Mantém/Apaga LED verde
+      digitalWrite(buzzer, LOW);
+    }
+    // Se nenhum botão/reed for pressionado, ou apenas um deles,
+    // o LED vermelho continua aceso e o loop continua esperando a ação correta.
+  }
+
+  // Fim da rodada, prepara para a próxima
+  lcd.clear();
+  Serial.println("Proxima rodada...");
+  delay(1000); // Pequena pausa antes da próxima forma
+}
