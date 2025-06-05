@@ -8,7 +8,7 @@
 
 - 🎯 **Objetivo**: Ensinar letras e formas de maneira lúdica, usando componentes físicos conectados ao Arduino.
 - 🧩 **Como funciona**: A criança encaixa formas físicas em um painel e aperta o botão correspondente a letra inicial da forma. O Arduino identifica a forma e botão e responde com som e luz 
-- 📚 **Público-alvo**: Crianças em fase de alfabetização (em especial crianças com sindrome de down ou com dificuldades de alfabetização).
+- 📚 **Público-alvo**: Crianças em fase de alfabetização (com foco em crianças com sindrome de down ou com dificuldades de alfabetização).
 
 ## 🔧 Tecnologias e materiais utilizados
 
@@ -23,7 +23,7 @@
 
 1. Copie o código e cole no Arduino IDE (ou programa que programe arduino).
 2. Conecte o Arduino ao computador e selecione a porta correta.
-3. Monte o circuito de acordo com o esquema (em breve!).
+3. Monte o circuito de acordo com o esquema desse manual:[FORMITAS.pdf](https://github.com/user-attachments/files/20618355/FORMITAS.pdf).
 4. Envie o código para a placa e comece a jogar!
 
 ## ✅ Funcionalidades
