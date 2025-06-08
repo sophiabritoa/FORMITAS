@@ -30,3 +30,4 @@
 
 - Detecção de formas através de sensores
 - Feedback visual e sonoro
+
