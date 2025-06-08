@@ -6,7 +6,7 @@
 
 ## 📦 Sobre o projeto
 
-- 🎯 **Objetivo**: Ensinar letras e formas de maneira lúdica, usando componentes físicos conectados ao Arduino.
+- 🎯 **Objetivo**: Ensinar letras e formas de maneira lúdica e trabalhar a coordenação motora das crianças usando componentes físicos conectados ao Arduino.
 - 🧩 **Como funciona**: A criança encaixa formas físicas em um painel e aperta o botão correspondente a letra inicial da forma. O Arduino identifica a forma e botão e responde com som e luz 
 - 📚 **Público-alvo**: Crianças em fase de alfabetização (com foco em crianças com sindrome de down ou com dificuldades de alfabetização).
 
@@ -29,5 +29,5 @@
 ## ✅ Funcionalidades
 
 - Detecção de formas através de sensores
-- Feedback visual e sonoro
+- Feedback sensorial (visual e sonoro)
 
